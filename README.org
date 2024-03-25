@@ -1,0 +1,11 @@
+#+TITLE: dunderversion
+
+Haskell script to set the value of the ~__version__~ global variable in
+a Python module.
+
+#+begin_example
+> dunderversion --help
+Usage: dunderversion VERSION PYTHON_FILE
+
+Set __version__ in the given Python file.
+#+end_example

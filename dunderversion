@@ -1,0 +1,49 @@
+#!/usr/bin/env runghc
+import Data.List (stripPrefix)
+import System.Directory (renameFile)
+import System.Environment (getArgs, getProgName)
+import System.Exit (exitFailure)
+import System.IO (hClose, hPutStr, hPutStrLn, openTempFile, stderr, writeFile)
+
+data Action = Help | SetVersion String FilePath
+
+parseArgs :: [String] -> Maybe Action
+parseArgs xs
+  | elem "-h" xs || elem "--help" xs = Just Help
+  | length xs == 2 = Just $ SetVersion (head xs) (last xs)
+  | otherwise = Nothing
+
+help :: String -> String
+help progname = unlines [
+  "Usage: " ++ progname ++ " VERSION PYTHON_FILE",
+  "",
+  "Set __version__ in the given Python file."
+  ]
+
+strSetVersion :: String -> String -> String
+strSetVersion version string
+  | Just _ <- stripPrefix "__version__ = " string =
+      "__version__ = \"" ++ version ++ "\""
+  | otherwise = string
+
+setVersion :: String -> FilePath -> IO ()
+setVersion version filepath = do
+  contents <- readFile filepath
+  (tempName, tempHandle) <- openTempFile "." "temp"
+  hPutStr tempHandle $ unlines $ map (strSetVersion version) $ lines contents
+  hClose tempHandle
+  renameFile tempName filepath
+
+main = do
+  progname <- getProgName
+  args <- getArgs
+  case parseArgs args of
+    Just Help -> putStr $ help progname
+    Just (SetVersion version path) -> setVersion version path
+    Nothing -> do
+      hPutStrLn stderr "error: unexpected arguments"
+      exitFailure
+
+-- Local Variables:
+-- mode: haskell
+-- End:
